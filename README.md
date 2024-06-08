@@ -8,3 +8,4 @@ https://www.washingtonpost.com/investigations/interactive/2023/opioid-epidemic-p
 ## Washington Post Repo
 https://github.com/wpinvestigative/arcos-api
 
+## The analysis will be done on Postgresql and visualized on Tableau. My goal is to showcase and spread awareness of the unfortunate disease that has plagued our nation. Also I want to emphasize sql tuning performance since the total file size is 150+ gb. 
