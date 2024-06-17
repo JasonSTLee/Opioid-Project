@@ -1,5 +1,17 @@
--- Before I start my analysis, I want to create a sample table so I can run my queries there first to find the fastest performing query
--- I will test on the sample table and then use the CREATE TABLE function to create a table out of each result.
+-- Out of my own curisoity I wanted to find the size of this particular database. 180 gb in total.
+SELECT
+	datname name,  
+   pg_size_pretty(pg_database_size(datname)) size_gb_mb
+FROM
+	pg_database
+ORDER BY
+	pg_database_size(datname) desc
+
+---------------------------------------
+
+
+-- Before I start my analysis, I want to create a sample table so that I'm able to test different queries (of the same result) to find the fastest performing query before running it on the main table.
+-- Each query that is wrapped around a CREATE TABLE function is the faster performing query.
 
 CREATE TABLE sample as (
 	SELECT	
@@ -9,14 +21,7 @@ CREATE TABLE sample as (
 	LIMIT 
 		5,000,000
 )
-
-SELECT
-	*
-FROM
-	all_states
-LIMIT 
-	5
-
+---------------------------------------
 	
 -- FIND THE NUMBER OF DOSAGE_UNIT PER STATE
 
@@ -364,3 +369,38 @@ SELECT
 FROM
 	all_states
 GROUP BY drug_name)
+
+
+-- Find the total dosage_unit count per era per state
+
+CREATE TABLE total_dosage_per_era_per_pop as (
+SELECT
+	p.state,
+	eras,
+	total_dosage,
+	CASE 
+		WHEN eras = 'Rise Years' THEN "2000"
+		WHEN eras = 'Peak Years' THEN "2010"
+		WHEN eras = 'Fall Years' THEN "2020"
+	END pop_in_era,
+	ROUND((total_dosage / (CASE 
+		WHEN eras = 'Rise Years' THEN "2000"
+		WHEN eras = 'Peak Years' THEN "2010"
+		WHEN eras = 'Fall Years' THEN "2020"
+	END)::numeric),2) dosage_per_pop
+FROM	
+	state_era_pop p 
+JOIN
+	dosage_per_era_per_state s ON s.state = p.state)
+	
+
+-- Find the total dosage per pop per state
+
+CREATE TABLE total_dosage_per_statepop as (
+SELECT 
+	p.state, 
+	total_dosage / population::numeric
+FROM
+	total_dosages_per_state d
+JOIN
+	population p ON d.state = p.state)
