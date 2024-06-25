@@ -1,3 +1,5 @@
+-- Creating the tables of opioid transactions and state populations
+
 CREATE TABLE az (
 	REPORTER_DEA_NO VARCHAR(200),
 	REPORTER_BUS_ACT VARCHAR(200),
