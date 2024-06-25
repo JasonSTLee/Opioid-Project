@@ -11,3 +11,5 @@ https://github.com/wpinvestigative/arcos-api
 
 ### Tableau Viz
 https://public.tableau.com/app/profile/jason.lee2654/viz/OpioidAnalysis_17184034804720/opioiddashboard-v2
+
+#### I originally used this [Wikipedia page] (https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_population)
