@@ -13,14 +13,17 @@ ORDER BY
 -- Before I start my analysis, I want to create a sample table so that I'm able to test different queries (of the same result) to find the fastest performing query before running it on the main table.
 -- Each query that is wrapped around a CREATE TABLE function is the faster performing query.
 
-CREATE TABLE sample as (
-	SELECT	
+CREATE TABLE sample_states as (
+	SELECT
 		*
 	FROM
-		all_states
-	LIMIT 
-		5,000,000
+		total_states
+	ORDER BY 
+		RANDOM() 
+	LIMIT
+		300000
 )
+
 ---------------------------------------
 	
 -- FIND THE NUMBER OF DOSAGE_UNIT PER STATE
@@ -404,3 +407,150 @@ FROM
 	total_dosages_per_state d
 JOIN
 	population p ON d.state = p.state)
+
+-- Find the ratio of chain pharmacies to retail pharmacies
+
+CREATE TABLE ratio_chain_retail as (
+	with all_cte as (
+		SELECT
+			EXTRACT(year FROM transaction_date) "year", 
+			buyer_bus_act, 
+			COUNT(*)::numeric total_transactions
+		FROM
+			total_states
+		WHERE
+			(buyer_bus_act = 'CHAIN PHARMACY'
+			or
+			buyer_bus_act = 'RETAIL PHARMACY')
+		GROUP BY
+			1,2
+		ORDER BY
+			2,1
+	), all_cte1 as (
+		SELECT
+			year, buyer_bus_act,
+			total_transactions,
+			LAG(total_transactions) OVER(PARTITION BY year ORDER BY buyer_bus_act) chain_transactions,
+			LAG(total_transactions) OVER(PARTITION BY year ORDER BY buyer_bus_act) / total_transactions as ratio_chain_retail_pharm
+		FROM
+			all_cte 
+		ORDER BY
+			year, buyer_bus_act
+	), all_cte2 as (
+		SELECT
+			year, 'All States' as "state", ratio_chain_retail_pharm
+		FROM
+			all_cte1
+		WHERE
+			ratio_chain_retail_pharm is not null
+	), state_cte as (
+		SELECT
+			EXTRACT(year FROM transaction_date) "year", 
+			buyer_state,
+			buyer_bus_act, 
+			COUNT(*)::numeric total_transactions
+		FROM
+			total_states
+		WHERE
+			(buyer_bus_act = 'CHAIN PHARMACY'
+			or
+			buyer_bus_act = 'RETAIL PHARMACY')
+		GROUP BY
+			1,2,3
+	), state_cte1 as (
+		SELECT
+			year, buyer_bus_act, buyer_state,
+			total_transactions retail_transactions,
+			LAG(total_transactions) OVER(PARTITION BY year, buyer_state ORDER BY year, buyer_bus_act) chain_transactions,
+			LAG(total_transactions) OVER(PARTITION BY year, buyer_state ORDER BY year, buyer_bus_act) / total_transactions as ratio_chain_retail_pharm
+		FROM
+			state_cte
+	), state_cte2 as (
+		SELECT
+			year, buyer_state, ratio_chain_retail_pharm
+		FROM
+			state_cte1
+		WHERE
+			chain_transactions is not null
+	), final_cte as (
+		SELECT
+			*
+		FROM
+			all_cte2
+		UNION
+		SELECT
+			*
+		FROM
+			state_cte2
+	)
+	SELECT
+		*
+	FROM
+		final_cte
+	ORDER BY
+		year, state
+)
+
+-- Finding the counties with top 5 dosages/pills
+
+CREATE TABLE county_with_highest_dosage as (
+	SELECT
+		buyer_county || ', ' || buyer_state as county, SUM(dosage_unit) 
+	FROM
+		total_states
+	GROUP BY
+		1
+	ORDER BY
+		2 desc
+	LIMIT 10
+)
+
+-- Finding the counties with top 5 transactions
+
+CREATE TABLE county_most_transactions as (
+	SELECT
+		buyer_county || ', ' || buyer_state as county, COUNT(*) 
+	FROM
+		total_states
+	GROUP BY
+		1
+	ORDER BY
+		2 desc
+	LIMIT 10
+)
+
+-- Finding the top 5 distributors
+
+CREATE TABLE top_distributor as (
+	SELECT
+		combined_labeler_name, SUM(dosage_unit)
+	FROM
+		total_states
+	WHERE
+		reporter_bus_act = 'DISTRIBUTOR'
+	GROUP BY
+		1
+	ORDER BY
+		2 desc
+	LIMIT 
+		5
+)
+
+-- Finding the top 5 distributors
+
+CREATE TABLE top_manufacturer as (
+	SELECT
+		Combined_Labeler_Name, SUM(dosage_unit)
+	FROM
+		total_states
+	WHERE
+		reporter_bus_act = 'MANUFACTURER'
+		and
+		Combined_Labeler_Name is not null
+	GROUP BY
+		1
+	ORDER BY
+		2 desc
+	LIMIT 
+		5
+)
