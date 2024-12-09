@@ -4,8 +4,7 @@
 https://www.washingtonpost.com/national/2019/07/18/how-download-use-dea-pain-pills-database/
 https://www.washingtonpost.com/investigations/interactive/2023/opioid-epidemic-pain-pills-sold-oxycodone-hydrocodone/
 
-## Washington Post Repo
-https://github.com/wpinvestigative/arcos-api
+**[Washington Post Repo](https://github.com/wpinvestigative/arcos-api)** 
 
 ## How It's Made:
 
